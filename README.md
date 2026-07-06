@@ -1,63 +1,34 @@
-# Fitness Tracker App
+# LiftTrack
 
-A modern React application for tracking and managing your workout routines. Built with TypeScript, Tailwind CSS, and Framer Motion for smooth animations.
+A private, browser-local workout log for a fixed four-week gym routine. LiftTrack records individual sets, cardio duration and distance, session history, and progress trends without an account or backend.
 
-## Features
+## Development
 
-- 🏋️ Weekly workout routines with daily schedules
-- ✅ Track completed workouts
-- 📊 Progress visualization
-- 🎬 Video demonstrations for each exercise
-- 📱 Responsive design optimized for mobile devices
-- 🌙 Dark mode interface with glass morphism effects
+Requires Node.js 22 (Vite supports Node 20.19+ or 22.12+).
 
-## Tech Stack
-
-- **React**: UI library
-- **TypeScript**: Type-safe JavaScript
-- **Tailwind CSS**: Utility-first CSS framework
-- **Framer Motion**: Animation library
-
-## Getting Started
-
-### Prerequisites
-
-- Node.js (v14 or higher)
-- npm or yarn
-
-### Installation
-
-1. Clone the repository
-   ```
-   git clone https://github.com/GeorgeKKR/workouts.git
-   cd workouts
-   ```
-
-2. Install dependencies
-   ```
-   npm install
-   ```
-
-3. Start the development server
-   ```
-   npm start
-   ```
-
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
-
-## Building for Production
-
-```
-npm run build
+```bash
+npm ci
+npm run dev
 ```
 
-This creates an optimized production build in the `build` folder.
+Run the full verification suite:
 
-## License
+```bash
+npm run check
+```
 
-MIT
+## Data and backups
 
-## Acknowledgements
+Workout history is stored only in the current browser. Use **Settings → Export backup** before clearing browser data or moving to another device, then use **Import backup** on the destination device.
 
-- Exercise data and video demonstrations sourced from various fitness resources
-- Icons and design inspiration from modern fitness applications
+The app imports completion markers from the original `completedWorkouts` browser key as undated legacy records. These are preserved but excluded from progress charts.
+
+## GitHub Pages
+
+The production site is built for `/workouts/` and deployed from `main` by `.github/workflows/deploy.yml`.
+
+One-time repository configuration:
+
+1. Open **Settings → Pages**.
+2. Under **Build and deployment**, choose **GitHub Actions** as the source.
+3. Push to `main` or run the workflow manually from the Actions tab.
