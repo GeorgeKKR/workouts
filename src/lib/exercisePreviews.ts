@@ -14,10 +14,13 @@ const previewFiles: Record<string, string> = {
   'Leg Curls': 'leg-curls.webp',
   Crunches: 'crunches.webp',
   'Cable Crunch': 'cable-crunch.webp',
+  'Shoulder Press': 'shoulder-press.webp',
+  'Biceps Curl': 'biceps-curl.webp',
+  'Triceps Pushdown': 'triceps-pushdown.webp',
 };
 
 export const getExercisePreview = (name: string, week: Week) => {
-  const file = name === 'Cardio'
+  const file = name.includes('Cardio') || name === 'Cool-down'
     ? week === 1
       ? 'cardio-treadmill.webp'
       : week === 2
@@ -25,7 +28,9 @@ export const getExercisePreview = (name: string, week: Week) => {
         : 'cardio-bike.webp'
     : previewFiles[name];
 
-  return file ? `${import.meta.env.BASE_URL}exercises/${file}` : undefined;
+  return file
+    ? `${import.meta.env.BASE_URL}exercises/${file}`
+    : `${import.meta.env.BASE_URL}lifttrack.svg`;
 };
 
 export const getExercisePreviewAlt = (name: string) => `${name} form preview`;

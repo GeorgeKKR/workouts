@@ -18,7 +18,10 @@ export const ActiveWorkout = () => {
   const [restSeconds, setRestSeconds] = useState(90);
   const [timerRunning, setTimerRunning] = useState(false);
   const [finishing, setFinishing] = useState(false);
+  const [showCardioDetails, setShowCardioDetails] = useState(false);
   const draft = data.activeDraft;
+
+  useEffect(() => { setShowCardioDetails(false); }, [draft?.activeExerciseIndex]);
 
   useEffect(() => {
     if (!timerRunning) return;
@@ -43,7 +46,8 @@ export const ActiveWorkout = () => {
     return <Navigate to="/" replace />;
   }
   const exercise = draft.exercises[draft.activeExerciseIndex];
-  const completedCount = draft.exercises.filter((item) => item.completed).length;
+  const completedCount = draft.exercises.filter((item) => item.status === 'logged').length;
+  const skippedCount = draft.exercises.filter((item) => item.status === 'skipped').length;
   const progress = ((draft.activeExerciseIndex + 1) / draft.exercises.length) * 100;
   const previous = data.sessions
     .flatMap((session) => session.exercises)
@@ -62,15 +66,16 @@ export const ActiveWorkout = () => {
       exercises: updateExercise(current.exercises, current.activeExerciseIndex, (item) => ({
         ...item,
         completed: hasLoggedWork(item),
+        status: hasLoggedWork(item) ? 'logged' : item.status,
       })),
       activeExerciseIndex: nextIndex,
     }));
     setTimerRunning(false);
-    setRestSeconds(90);
+    setRestSeconds(draft.exercises[nextIndex].restSeconds ?? 90);
   };
 
   const finish = () => {
-    changeExercise((current) => ({ ...current, completed: hasLoggedWork(current) }));
+    changeExercise((current) => ({ ...current, completed: hasLoggedWork(current), status: hasLoggedWork(current) ? 'logged' : current.status }));
     setFinishing(true);
     finishSession();
   };
@@ -83,8 +88,21 @@ export const ActiveWorkout = () => {
   };
 
   const toggleTimer = () => {
-    if (restSeconds === 0) setRestSeconds(90);
+    if (restSeconds === 0) setRestSeconds(exercise.restSeconds ?? 90);
     setTimerRunning((running) => !running);
+  };
+
+  const toggleSetCompletion = (setId: string) => {
+    const willComplete = !exercise.sets.find((item) => item.id === setId)?.completed;
+    changeExercise((current) => ({ ...current, status: willComplete ? 'logged' : current.status, sets: current.sets.map((item) => item.id === setId ? { ...item, completed: !item.completed } : item) }));
+    if (willComplete) { setRestSeconds(exercise.restSeconds ?? 90); setTimerRunning(true); }
+  };
+
+  const skip = () => {
+    if (draft.activeExerciseIndex >= draft.exercises.length - 1) return;
+    updateDraft((current) => ({ ...current, exercises: updateExercise(current.exercises, current.activeExerciseIndex, (item) => ({ ...item, completed: false, status: 'skipped' })), activeExerciseIndex: current.activeExerciseIndex + 1 }));
+    setTimerRunning(false);
+    setRestSeconds(draft.exercises[draft.activeExerciseIndex + 1].restSeconds ?? 90);
   };
 
   const formatTime = (seconds: number) => `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
@@ -95,7 +113,7 @@ export const ActiveWorkout = () => {
         <div className="session-toolbar">
           <button className="icon-text-button" onClick={() => navigate('/')} aria-label="Back to dashboard">←</button>
           <strong>{draft.activeExerciseIndex + 1} of {draft.exercises.length}</strong>
-          <button className="text-button danger" onClick={abandon}>Abandon</button>
+          <div className="session-toolbar-actions">{draft.activeExerciseIndex < draft.exercises.length - 1 ? <button className="text-button" onClick={skip}>Skip</button> : null}<button className="text-button danger" onClick={abandon}>Abandon</button></div>
         </div>
         <div className="session-progress" aria-label={`Exercise ${draft.activeExerciseIndex + 1} of ${draft.exercises.length}`}>
           <span style={{ width: `${progress}%` }} />
@@ -112,9 +130,11 @@ export const ActiveWorkout = () => {
             <div>
               <h1>{exercise.name}</h1>
               <p className="target-copy">{exercise.target}</p>
+              {exercise.startingWeight ? <p className="target-copy">Starting target: {exercise.startingWeight}</p> : null}
+              {exercise.restSeconds ? <p className="target-copy">Rest: {exercise.restSeconds} sec</p> : null}
             </div>
           </div>
-          <span className="completion-count">{completedCount}/{draft.exercises.length} logged</span>
+          <span className="completion-count">{completedCount} logged{skippedCount ? ` · ${skippedCount} skipped` : ''}</span>
         </div>
       </header>
 
@@ -136,10 +156,9 @@ export const ActiveWorkout = () => {
         </div>
         {exercise.input === 'cardio' && exercise.cardio ? (
           <div className="form-grid cardio-grid">
-            <label>Minutes<input inputMode="decimal" value={exercise.cardio.durationMinutes} onChange={(event) => changeExercise((current) => ({ ...current, cardio: { ...current.cardio!, durationMinutes: event.target.value } }))} /></label>
-            <label>Distance<input inputMode="decimal" value={exercise.cardio.distance} onChange={(event) => changeExercise((current) => ({ ...current, cardio: { ...current.cardio!, distance: event.target.value } }))} /></label>
-            <label>Distance unit<select value={exercise.cardio.distanceUnit} onChange={(event) => changeExercise((current) => ({ ...current, cardio: { ...current.cardio!, distanceUnit: event.target.value as 'mi' | 'km' } }))}><option value="mi">miles</option><option value="km">kilometers</option></select></label>
-            <label>Machine<input value={exercise.cardio.machine} onChange={(event) => changeExercise((current) => ({ ...current, cardio: { ...current.cardio!, machine: event.target.value } }))} placeholder="Treadmill, bike…" /></label>
+            <label>Minutes<input inputMode="decimal" value={exercise.cardio.durationMinutes} onChange={(event) => changeExercise((current) => ({ ...current, status: event.target.value ? 'logged' : current.status, cardio: { ...current.cardio!, durationMinutes: event.target.value } }))} /></label>
+            <button className="cardio-details-toggle" aria-expanded={showCardioDetails} onClick={() => setShowCardioDetails((value) => !value)}>Add distance or machine details</button>
+            {showCardioDetails ? <div className="cardio-optional-fields"><label>Distance<input inputMode="decimal" value={exercise.cardio.distance} onChange={(event) => changeExercise((current) => ({ ...current, cardio: { ...current.cardio!, distance: event.target.value } }))} /></label><label>Distance unit<select value={exercise.cardio.distanceUnit} onChange={(event) => changeExercise((current) => ({ ...current, cardio: { ...current.cardio!, distanceUnit: event.target.value as 'mi' | 'km' } }))}><option value="mi">miles</option><option value="km">kilometers</option></select></label><label>Machine<input value={exercise.cardio.machine} onChange={(event) => changeExercise((current) => ({ ...current, cardio: { ...current.cardio!, machine: event.target.value } }))} placeholder="Treadmill, bike…" /></label></div> : null}
           </div>
         ) : (
           <div className="set-table">
@@ -165,7 +184,7 @@ export const ActiveWorkout = () => {
                     ? <input aria-label={`Set ${setIndex + 1} reps`} inputMode="numeric" value={set.reps} onChange={(event) => changeExercise((current) => ({ ...current, sets: current.sets.map((item) => item.id === set.id ? { ...item, reps: event.target.value } : item) }))} />
                     : <span className="set-status">{set.completed ? 'Completed' : 'Pending'}</span>}
                 </div>
-                <button aria-label={`${set.completed ? 'Mark incomplete' : 'Complete'} set ${setIndex + 1}`} className="check-button" onClick={() => changeExercise((current) => ({ ...current, sets: current.sets.map((item) => item.id === set.id ? { ...item, completed: !item.completed } : item) }))}>{set.completed ? '✓' : '○'}</button>
+                <button aria-label={`${set.completed ? 'Mark incomplete' : 'Complete'} set ${setIndex + 1}`} className="check-button" onClick={() => toggleSetCompletion(set.id)}>{set.completed ? '✓' : '○'}</button>
               </div>
             ))}
           </div>
@@ -181,11 +200,11 @@ export const ActiveWorkout = () => {
           </button>
           <div>
             <button onClick={() => setRestSeconds((seconds) => seconds + 30)}>+30</button>
-            <button onClick={() => { setTimerRunning(false); setRestSeconds(90); }}>Reset</button>
+            <button onClick={() => { setTimerRunning(false); setRestSeconds(exercise.restSeconds ?? 90); }}>Reset</button>
           </div>
         </div>
         {draft.activeExerciseIndex < draft.exercises.length - 1 ? (
-          <button className="button button-primary next-button" onClick={() => moveTo(draft.activeExerciseIndex + 1)}>Next <span>exercise →</span></button>
+          <button aria-label="Next exercise" className="button button-primary next-button" onClick={() => moveTo(draft.activeExerciseIndex + 1)}>Next <span>{draft.exercises[draft.activeExerciseIndex + 1].name} →</span></button>
         ) : (
           <button className="button button-primary next-button" onClick={finish}>Finish <span>workout ✓</span></button>
         )}

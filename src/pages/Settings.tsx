@@ -81,6 +81,13 @@ export const Settings = () => {
         ) : null}
       </section>
 
+      <h2 className="settings-label">iPhone app</h2>
+      <section className="settings-section">
+        <div className="setting-row setting-row-stack">
+          <span><strong>Add LiftTrack to your Home Screen</strong><small>In Safari, tap Share, then choose Add to Home Screen. LiftTrack opens full-screen and keeps your workout data on this device.</small></span>
+        </div>
+      </section>
+
       {legacyCount > 0 ? (
         <>
           <h2 className="settings-label">Imported data</h2>

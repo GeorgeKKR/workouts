@@ -26,7 +26,7 @@ export const AppShell = () => {
       {!sessionMode ? (
         <aside className="sidebar">
           <div className="brand" aria-label="LiftTrack">
-            <span className="brand-mark" aria-hidden="true">H</span>
+            <span className="brand-mark" aria-hidden="true"><img src={`${import.meta.env.BASE_URL}lifttrack.svg`} alt="" /></span>
             <span>LiftTrack</span>
           </div>
           <nav aria-label="Primary navigation">

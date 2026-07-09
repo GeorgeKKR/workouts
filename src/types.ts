@@ -4,6 +4,7 @@ export type Week = 1 | 2 | 3 | 4;
 export type WeightUnit = 'lb' | 'kg';
 export type DistanceUnit = 'mi' | 'km';
 export type WorkoutType = 'upper' | 'lower' | 'cardio';
+export type ExerciseStatus = 'planned' | 'logged' | 'skipped';
 
 export interface Workout {
   id: string;
@@ -11,6 +12,8 @@ export interface Workout {
   sets: number;
   reps: string;
   guidance?: string;
+  startingWeight?: string;
+  restSeconds?: number;
   videoUrl?: string;
   type: WorkoutType;
   input: 'strength' | 'reps' | 'duration' | 'cardio';
@@ -41,9 +44,12 @@ export interface ExerciseLog {
   type: WorkoutType;
   input: Workout['input'];
   target: string;
+  startingWeight?: string;
+  restSeconds?: number;
   sets: StrengthSet[];
   cardio?: CardioResult;
   completed: boolean;
+  status?: ExerciseStatus;
 }
 
 export interface WorkoutSession {

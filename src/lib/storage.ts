@@ -62,10 +62,13 @@ const isExerciseLog = (value: unknown): value is ExerciseLog => {
     (exercise.type === 'upper' || exercise.type === 'lower' || exercise.type === 'cardio') &&
     (exercise.input === 'strength' || exercise.input === 'reps' || exercise.input === 'duration' || exercise.input === 'cardio') &&
     typeof exercise.target === 'string' &&
+    isStringOrUndefined(exercise.startingWeight) &&
+    (exercise.restSeconds === undefined || (Number.isInteger(exercise.restSeconds) && exercise.restSeconds > 0)) &&
     Array.isArray(exercise.sets) &&
     exercise.sets.every(isStrengthSet) &&
     (exercise.cardio === undefined || isCardioResult(exercise.cardio)) &&
-    typeof exercise.completed === 'boolean'
+    typeof exercise.completed === 'boolean' &&
+    (exercise.status === undefined || exercise.status === 'planned' || exercise.status === 'logged' || exercise.status === 'skipped')
   );
 };
 
@@ -83,9 +86,12 @@ const normalizeSession = (session: WorkoutSession): WorkoutSession => ({
     type: exercise.type,
     input: exercise.input,
     target: exercise.target,
+    startingWeight: exercise.startingWeight,
+    restSeconds: exercise.restSeconds,
     sets: exercise.sets,
     cardio: exercise.cardio,
     completed: exercise.completed,
+    status: exercise.status ?? (exercise.completed ? 'logged' : 'planned'),
   })),
 });
 

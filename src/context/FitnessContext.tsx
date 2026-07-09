@@ -12,6 +12,9 @@ import type {
 } from '../types';
 
 const createId = () => globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+const hasLoggedWork = (exercise: ExerciseLog) => exercise.cardio
+  ? Number(exercise.cardio.durationMinutes) > 0
+  : exercise.sets.some((set) => set.completed);
 
 const createExerciseLog = (workout: Workout, settings: AppSettings): ExerciseLog => ({
   exerciseId: workout.id,
@@ -20,6 +23,8 @@ const createExerciseLog = (workout: Workout, settings: AppSettings): ExerciseLog
   type: workout.type,
   input: workout.input,
   target: `${workout.sets} × ${workout.reps}`,
+  startingWeight: workout.startingWeight,
+  restSeconds: workout.restSeconds,
   sets: workout.input === 'cardio'
     ? []
     : Array.from({ length: workout.sets }, () => ({
@@ -39,6 +44,7 @@ const createExerciseLog = (workout: Workout, settings: AppSettings): ExerciseLog
     }
     : undefined,
   completed: false,
+  status: 'planned',
 });
 
 interface FitnessContextValue {
@@ -93,7 +99,14 @@ export const FitnessProvider = ({ children }: { children: ReactNode }) => {
       const completed: WorkoutSession = {
         ...previous.activeDraft,
         completedAt: new Date().toISOString(),
-        exercises: previous.activeDraft.exercises,
+        exercises: previous.activeDraft.exercises.map((exercise) => {
+          const logged = hasLoggedWork(exercise);
+          return {
+            ...exercise,
+            completed: exercise.status === 'skipped' ? false : logged,
+            status: exercise.status === 'skipped' ? 'skipped' : logged ? 'logged' : 'planned',
+          };
+        }),
       };
       return {
         ...previous,

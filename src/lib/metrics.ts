@@ -32,7 +32,7 @@ export const buildExerciseTrend = (sessions: WorkoutSession[], exerciseKey: stri
     .filter((session) => !!session.completedAt)
     .flatMap((session) => {
       const exercise = session.exercises.find((item) => item.exerciseId === exerciseKey || item.name === exerciseKey);
-      if (!exercise) return [];
+      if (!exercise || exercise.status === 'skipped') return [];
       const weights = exercise.sets
         .filter((set) => set.completed && set.weight.trim() !== '')
         .map((set) => toPounds(Number(set.weight), set.unit))

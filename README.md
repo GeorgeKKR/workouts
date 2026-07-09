@@ -1,6 +1,6 @@
 # LiftTrack
 
-A private, browser-local workout log for a fixed four-week gym routine. LiftTrack records individual sets, cardio duration and distance, session history, and progress trends without an account or backend.
+A private, browser-local workout log for a four-week full-body gym program. The weekly schedule includes full-body strength, core, and post-lift cardio on Monday, Wednesday, and Friday; steady-state cardio or active recovery on Tuesday, Thursday, and Saturday; and Sunday rest. LiftTrack records individual sets, cardio duration and distance, session history, and progress trends without an account or backend.
 
 ## Development
 

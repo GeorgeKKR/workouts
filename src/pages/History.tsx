@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { buildExerciseTrend, fromMiles, fromPounds } from '../lib/metrics';
 import { getExercisePreview, getExercisePreviewAlt } from '../lib/exercisePreviews';
 import { useFitness } from '../context/FitnessContext';
@@ -100,7 +101,9 @@ const SessionDetail = ({ session }: { session: WorkoutSession }) => (
         />
         <span className="session-exercise-copy"><strong>{exercise.name}</strong></span>
         <span>
-          {exercise.cardio
+          {exercise.status === 'skipped'
+            ? 'Skipped'
+            : exercise.cardio
             ? `${exercise.cardio.durationMinutes || '—'} min${exercise.cardio.distance ? ` · ${exercise.cardio.distance} ${exercise.cardio.distanceUnit}` : ''}`
             : `${exercise.sets.filter((set) => set.completed).length}/${exercise.sets.length} sets`}
         </span>
@@ -111,6 +114,7 @@ const SessionDetail = ({ session }: { session: WorkoutSession }) => (
 
 export const History = () => {
   const { data } = useFitness();
+  const navigate = useNavigate();
   const [mobileView, setMobileView] = useState<'sessions' | 'progress'>('sessions');
   const [selectedSessionId, setSelectedSessionId] = useState(data.sessions[0]?.id ?? '');
   const selectedSession = data.sessions.find((session) => session.id === selectedSessionId) ?? data.sessions[0];
@@ -183,6 +187,7 @@ export const History = () => {
           <span aria-hidden="true">↗</span>
           <h2>Your history starts with one workout</h2>
           <p>Finished sessions will appear here with exercise details and progress trends.</p>
+          <button className="button button-primary" onClick={() => navigate('/')}>Start today’s workout</button>
         </div>
       )}
     </div>

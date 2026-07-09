@@ -65,7 +65,7 @@ describe('LiftTrack', () => {
     if (!start) return;
     await user.click(start);
     await user.click(screen.getByRole('button', { name: /^abandon$/i }));
-    expect(await screen.findByRole('heading', { name: /today’s workout/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Today' })).toBeInTheDocument();
     expect(window.localStorage.getItem('lifttrack:data')).toContain('"activeDraft":null');
   });
 
@@ -81,16 +81,29 @@ describe('LiftTrack', () => {
     expect(stored.activeDraft.exercises[0]).not.toHaveProperty(deprecatedKey);
   });
 
+  it('records a skipped exercise and advances the active workout', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await user.click(screen.getByRole('tab', { name: /Mon/i }));
+    await user.click(screen.getByRole('button', { name: /start workout/i }));
+    await user.click(screen.getByRole('button', { name: 'Skip' }));
+    expect(await screen.findByRole('heading', { name: 'Leg Press' })).toBeInTheDocument();
+    const stored = JSON.parse(window.localStorage.getItem('lifttrack:data') ?? '{}');
+    expect(stored.activeDraft.exercises[0]).toMatchObject({ status: 'skipped', completed: false });
+  });
+
   it('persists strength and cardio entries in the active draft', async () => {
     const user = userEvent.setup();
     render(<App />);
     await user.click(screen.getByRole('tab', { name: /Mon/i }));
     await user.click(screen.getByRole('button', { name: /start workout/i }));
+    await user.click(screen.getByRole('button', { name: /next exercise/i }));
     await user.type(screen.getByLabelText('Set 1 weight', { exact: true }), '135');
     await user.type(screen.getByLabelText('Set 1 reps', { exact: true }), '10');
     await user.click(screen.getByRole('button', { name: /complete set 1/i }));
     let stored = JSON.parse(window.localStorage.getItem('lifttrack:data') ?? '{}');
-    expect(stored.activeDraft.exercises[0].sets[0]).toMatchObject({ weight: '135', reps: '10', completed: true });
+    expect(stored.activeDraft.exercises.find((exercise: { name: string }) => exercise.name === 'Leg Press').sets[0])
+      .toMatchObject({ weight: '135', reps: '10', completed: true });
 
     window.localStorage.clear();
     cleanup();
@@ -98,6 +111,7 @@ describe('LiftTrack', () => {
     await user.click(screen.getByRole('tab', { name: /Tue/i }));
     await user.click(screen.getByRole('button', { name: /start workout/i }));
     await user.type(screen.getByLabelText('Minutes'), '25');
+    await user.click(screen.getByRole('button', { name: /add distance or machine details/i }));
     await user.type(screen.getByLabelText('Distance'), '2');
     await user.type(screen.getByLabelText('Machine'), 'Bike');
     stored = JSON.parse(window.localStorage.getItem('lifttrack:data') ?? '{}');
