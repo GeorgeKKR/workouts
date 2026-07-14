@@ -70,7 +70,7 @@ export const Settings = () => {
         <div className="setting-row">
           <span><strong>Import backup</strong><small>Validate a LiftTrack backup before replacing local data.</small></span>
           <button className="button button-secondary" onClick={() => inputRef.current?.click()}>Choose file</button>
-          <input ref={inputRef} className="visually-hidden" type="file" accept="application/json,.json" onChange={readBackup} />
+          <input ref={inputRef} hidden type="file" accept="application/json,.json" onChange={readBackup} />
         </div>
         {importError ? <div className="notice notice-warning" role="alert">{importError}</div> : null}
         {preview ? (

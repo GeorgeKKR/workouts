@@ -184,10 +184,9 @@ export const History = () => {
         </>
       ) : (
         <div className="empty-state history-empty">
-          <span aria-hidden="true">↗</span>
           <h2>Your history starts with one workout</h2>
           <p>Finished sessions will appear here with exercise details and progress trends.</p>
-          <button className="button button-primary" onClick={() => navigate('/')}>Start today’s workout</button>
+          <button className="button button-primary" onClick={() => navigate('/')}>Go to today</button>
         </div>
       )}
     </div>

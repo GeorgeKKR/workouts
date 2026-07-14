@@ -25,14 +25,13 @@ describe('LiftTrack', () => {
   it('starts and resumes a workout draft', async () => {
     const user = userEvent.setup();
     render(<App />);
-    const start = screen.queryByRole('button', { name: /start workout/i });
-    if (start) {
-      await user.click(start);
-      expect(await screen.findByRole('heading', { level: 1 })).toBeInTheDocument();
-      expect(window.localStorage.getItem('lifttrack:data')).toContain('"activeDraft"');
-    } else {
-      expect(screen.getByText(/recovery day/i)).toBeInTheDocument();
-    }
+    await user.click(screen.getByRole('tab', { name: /Mon/i }));
+    await user.click(screen.getByRole('button', { name: /start workout/i }));
+    expect(await screen.findByRole('heading', { name: 'Warm-up Cardio' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /back to dashboard/i }));
+    await user.click(await screen.findByRole('button', { name: /workout in progress/i }));
+    expect(await screen.findByRole('heading', { name: 'Warm-up Cardio' })).toBeInTheDocument();
+    expect(window.localStorage.getItem('lifttrack:data')).toContain('"activeDraft"');
   });
 
   it('changes the default unit in settings', async () => {
@@ -46,9 +45,8 @@ describe('LiftTrack', () => {
   it('finishes a focused workout and records it in history', async () => {
     const user = userEvent.setup();
     render(<App />);
-    const start = screen.queryByRole('button', { name: /start workout/i });
-    if (!start) return;
-    await user.click(start);
+    await user.click(screen.getByRole('tab', { name: /Mon/i }));
+    await user.click(screen.getByRole('button', { name: /start workout/i }));
     while (screen.queryByRole('button', { name: /next exercise/i })) {
       await user.click(screen.getByRole('button', { name: /next exercise/i }));
     }
@@ -61,20 +59,19 @@ describe('LiftTrack', () => {
     const user = userEvent.setup();
     vi.spyOn(window, 'confirm').mockReturnValue(true);
     render(<App />);
-    const start = screen.queryByRole('button', { name: /start workout/i });
-    if (!start) return;
-    await user.click(start);
+    await user.click(screen.getByRole('tab', { name: /Mon/i }));
+    await user.click(screen.getByRole('button', { name: /start workout/i }));
     await user.click(screen.getByRole('button', { name: /^abandon$/i }));
     expect(await screen.findByRole('heading', { name: 'Today' })).toBeInTheDocument();
-    expect(window.localStorage.getItem('lifttrack:data')).toContain('"activeDraft":null');
+    const stored = window.localStorage.getItem('lifttrack:data');
+    expect(stored === null || JSON.parse(stored).activeDraft === null).toBe(true);
   });
 
   it('keeps the exercise logger focused on workout inputs', async () => {
     const user = userEvent.setup();
     render(<App />);
-    const start = screen.queryByRole('button', { name: /start workout/i });
-    if (!start) return;
-    await user.click(start);
+    await user.click(screen.getByRole('tab', { name: /Mon/i }));
+    await user.click(screen.getByRole('button', { name: /start workout/i }));
     expect(document.querySelector('textarea')).not.toBeInTheDocument();
     const stored = JSON.parse(window.localStorage.getItem('lifttrack:data') ?? '{}');
     const deprecatedKey = ['no', 'te'].join('');
@@ -120,6 +117,60 @@ describe('LiftTrack', () => {
       distance: '2',
       machine: 'Bike',
     });
+  });
+
+  it('opens exercise details without starting a workout', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await user.click(screen.getByRole('tab', { name: /Mon/i }));
+    await user.click(screen.getByRole('link', { name: /view leg press details/i }));
+    expect(await screen.findByRole('heading', { name: 'Leg Press', level: 1 })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /play demo/i })).toBeInTheDocument();
+    expect(screen.getByText('90 seconds')).toBeInTheDocument();
+    expect(window.location.hash).toContain('/exercise/monday/1/leg-press-mon-1');
+    const stored = window.localStorage.getItem('lifttrack:data');
+    expect(stored === null || JSON.parse(stored).activeDraft === null).toBe(true);
+    await user.click(screen.getByRole('link', { name: /back to monday plan/i }));
+    expect(await screen.findByRole('heading', { name: 'Monday' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /Mon/i })).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('loads the privacy-enhanced demo player on demand', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await user.click(screen.getByRole('tab', { name: /Mon/i }));
+    await user.click(screen.getByRole('link', { name: /view leg press details/i }));
+    expect(screen.queryByTitle(/leg press demonstration/i)).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /play demo/i }));
+    expect(screen.getByTitle(/leg press demonstration/i)).toHaveAttribute('src', expect.stringContaining('youtube-nocookie.com'));
+  });
+
+  it('shows an intentional fallback when a demo is unavailable', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await user.click(screen.getByRole('tab', { name: /Wed/i }));
+    await user.click(screen.getByRole('link', { name: /view smith machine squat details/i }));
+    expect(await screen.findByRole('heading', { name: 'Smith Machine Squat', level: 1 })).toBeInTheDocument();
+    expect(screen.getByText('Demo coming soon')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /play demo/i })).not.toBeInTheDocument();
+  });
+
+  it('jumps directly to an exercise from the active workout queue', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await user.click(screen.getByRole('tab', { name: /Mon/i }));
+    await user.click(screen.getByRole('button', { name: /start workout/i }));
+    await user.click(screen.getByRole('button', { name: /exercise 1 of 11/i }));
+    await user.click(screen.getByRole('button', { name: /go to exercise 2: leg press/i }));
+    expect(await screen.findByRole('heading', { name: 'Leg Press' })).toBeInTheDocument();
+    expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '2');
+  });
+
+  it('offers a recovery path for an invalid exercise link', async () => {
+    window.location.hash = '#/exercise/monday/1/not-a-real-exercise';
+    render(<App />);
+    expect(await screen.findByRole('heading', { name: /isn’t in this plan/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /return to today/i })).toBeInTheDocument();
   });
 
   it('exports and previews a validated backup before replacement', async () => {

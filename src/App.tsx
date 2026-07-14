@@ -3,6 +3,7 @@ import { AppShell } from './components/AppShell';
 import { FitnessProvider } from './context/FitnessContext';
 import { ActiveWorkout } from './pages/ActiveWorkout';
 import { Dashboard } from './pages/Dashboard';
+import { ExerciseDetail } from './pages/ExerciseDetail';
 import { History } from './pages/History';
 import { Settings } from './pages/Settings';
 
@@ -12,6 +13,7 @@ const App = () => (
       <Routes>
         <Route element={<AppShell />}>
           <Route index element={<Dashboard />} />
+          <Route path="exercise/:day/:week/:exerciseId" element={<ExerciseDetail />} />
           <Route path="workout" element={<ActiveWorkout />} />
           <Route path="history" element={<History />} />
           <Route path="settings" element={<Settings />} />

@@ -13,9 +13,11 @@ export default defineConfig({
         name: 'LiftTrack',
         short_name: 'LiftTrack',
         description: 'A private, local workout log.',
-        theme_color: '#080d14',
-        background_color: '#080d14',
+        id: '/workouts/',
+        theme_color: '#050b18',
+        background_color: '#050b18',
         display: 'standalone',
+        orientation: 'portrait-primary',
         start_url: '/workouts/',
         scope: '/workouts/',
         icons: [

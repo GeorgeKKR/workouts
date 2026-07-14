@@ -129,3 +129,6 @@ export const getToday = (): Day => {
 };
 
 export const getWorkouts = (day: Day, week: Week) => workoutSchedule[day][week];
+
+export const getWorkout = (day: Day, week: Week, exerciseId: string) =>
+  getWorkouts(day, week).find((item) => item.id === exerciseId);

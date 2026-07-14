@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { Navigate, useNavigate } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { useFitness } from '../context/FitnessContext';
 import { getExercisePreview, getExercisePreviewAlt } from '../lib/exercisePreviews';
 import type { ExerciseLog } from '../types';
@@ -19,9 +19,17 @@ export const ActiveWorkout = () => {
   const [timerRunning, setTimerRunning] = useState(false);
   const [finishing, setFinishing] = useState(false);
   const [showCardioDetails, setShowCardioDetails] = useState(false);
+  const [showExerciseList, setShowExerciseList] = useState(false);
+  const exerciseHeadingRef = useRef<HTMLHeadingElement>(null);
+  const previousExerciseIndex = useRef(data.activeDraft?.activeExerciseIndex);
   const draft = data.activeDraft;
 
-  useEffect(() => { setShowCardioDetails(false); }, [draft?.activeExerciseIndex]);
+  useEffect(() => {
+    setShowCardioDetails(false);
+    setShowExerciseList(false);
+    if (draft && previousExerciseIndex.current !== draft.activeExerciseIndex) exerciseHeadingRef.current?.focus();
+    previousExerciseIndex.current = draft?.activeExerciseIndex;
+  }, [draft?.activeExerciseIndex]);
 
   useEffect(() => {
     if (!timerRunning) return;
@@ -61,6 +69,10 @@ export const ActiveWorkout = () => {
   };
 
   const moveTo = (nextIndex: number) => {
+    if (nextIndex === draft.activeExerciseIndex) {
+      setShowExerciseList(false);
+      return;
+    }
     updateDraft((current) => ({
       ...current,
       exercises: updateExercise(current.exercises, current.activeExerciseIndex, (item) => ({
@@ -72,6 +84,7 @@ export const ActiveWorkout = () => {
     }));
     setTimerRunning(false);
     setRestSeconds(draft.exercises[nextIndex].restSeconds ?? 90);
+    setShowExerciseList(false);
   };
 
   const finish = () => {
@@ -112,13 +125,24 @@ export const ActiveWorkout = () => {
       <header className="workout-header">
         <div className="session-toolbar">
           <button className="icon-text-button" onClick={() => navigate('/')} aria-label="Back to dashboard">←</button>
-          <strong>{draft.activeExerciseIndex + 1} of {draft.exercises.length}</strong>
+          <button className="exercise-queue-trigger" aria-expanded={showExerciseList} aria-controls="exercise-queue" onClick={() => setShowExerciseList((value) => !value)}>Exercise {draft.activeExerciseIndex + 1} of {draft.exercises.length}</button>
           <div className="session-toolbar-actions">{draft.activeExerciseIndex < draft.exercises.length - 1 ? <button className="text-button" onClick={skip}>Skip</button> : null}<button className="text-button danger" onClick={abandon}>Abandon</button></div>
         </div>
-        <div className="session-progress" aria-label={`Exercise ${draft.activeExerciseIndex + 1} of ${draft.exercises.length}`}>
+        <div className="session-progress" role="progressbar" aria-label={`Exercise ${draft.activeExerciseIndex + 1} of ${draft.exercises.length}`} aria-valuemin={1} aria-valuemax={draft.exercises.length} aria-valuenow={draft.activeExerciseIndex + 1}>
           <span style={{ width: `${progress}%` }} />
         </div>
-        <div className="exercise-heading">
+        {showExerciseList ? (
+          <section id="exercise-queue" className="exercise-queue-panel" aria-labelledby="exercise-queue-heading">
+            <div className="exercise-queue-heading"><div><span>Session map</span><h2 id="exercise-queue-heading">Jump to an exercise</h2></div><button className="text-button" onClick={() => setShowExerciseList(false)}>Close</button></div>
+            <ol>
+              {draft.exercises.map((item, index) => {
+                const state = index === draft.activeExerciseIndex ? 'Current' : item.status === 'logged' ? 'Logged' : item.status === 'skipped' ? 'Skipped' : 'Planned';
+                return <li key={item.exerciseId}><button className={index === draft.activeExerciseIndex ? 'active' : ''} aria-label={`Go to exercise ${index + 1}: ${item.name}, ${state}`} aria-current={index === draft.activeExerciseIndex ? 'step' : undefined} onClick={() => moveTo(index)}><span className="queue-number">{index + 1}</span><span><strong>{item.name}</strong><small>{item.target}</small></span><span className={`queue-status ${state.toLowerCase()}`}>{state}</span></button></li>;
+              })}
+            </ol>
+          </section>
+        ) : null}
+        <div className="exercise-heading" key={`${exercise.exerciseId}-heading`}>
           <div className="exercise-heading-main">
             <img
               className="active-exercise-preview"
@@ -128,7 +152,7 @@ export const ActiveWorkout = () => {
               height="88"
             />
             <div>
-              <h1>{exercise.name}</h1>
+              <h1 ref={exerciseHeadingRef} tabIndex={-1}>{exercise.name}</h1>
               <p className="target-copy">{exercise.target}</p>
               {exercise.startingWeight ? <p className="target-copy">Starting target: {exercise.startingWeight}</p> : null}
               {exercise.restSeconds ? <p className="target-copy">Rest: {exercise.restSeconds} sec</p> : null}
@@ -149,10 +173,10 @@ export const ActiveWorkout = () => {
         </div>
       ) : null}
 
-      <section className="logging-panel" aria-labelledby="logging-heading">
+      <section className="logging-panel" key={`${exercise.exerciseId}-logging`} aria-labelledby="logging-heading">
         <div className="logging-title">
           <h2 id="logging-heading">Sets</h2>
-          {exercise.videoUrl ? <a className="video-link" href={exercise.videoUrl.replace('/embed/', '/watch?v=')} target="_blank" rel="noreferrer">Watch demo ↗</a> : null}
+          <Link className="video-link" to={`/exercise/${draft.day}/${draft.week}/${encodeURIComponent(exercise.exerciseId)}`}>Form &amp; demo</Link>
         </div>
         {exercise.input === 'cardio' && exercise.cardio ? (
           <div className="form-grid cardio-grid">

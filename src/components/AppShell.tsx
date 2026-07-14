@@ -1,4 +1,5 @@
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
+import type { CSSProperties } from 'react';
 
 const Icon = ({ name }: { name: 'today' | 'history' | 'settings' }) => {
   const paths = {
@@ -20,7 +21,11 @@ const links = [
 ];
 
 export const AppShell = () => {
-  const sessionMode = useLocation().pathname === '/workout';
+  const location = useLocation();
+  const sessionMode = location.pathname === '/workout';
+  const todaySection = location.pathname === '/' || location.pathname.startsWith('/exercise/');
+  const activeIndex = todaySection ? 0 : location.pathname.startsWith('/history') ? 1 : 2;
+  const linkClassName = (to: string, isActive: boolean) => isActive || (to === '/' && todaySection) ? 'active' : '';
   return (
     <div className={`app-shell ${sessionMode ? 'session-mode' : ''}`}>
       {!sessionMode ? (
@@ -31,7 +36,7 @@ export const AppShell = () => {
           </div>
           <nav aria-label="Primary navigation">
             {links.map((link) => (
-              <NavLink key={link.to} to={link.to} end={link.to === '/'}>
+              <NavLink key={link.to} to={link.to} end={link.to === '/'} className={({ isActive }) => linkClassName(link.to, isActive)}>
                 <Icon name={link.icon} />
                 <span>{link.label}</span>
               </NavLink>
@@ -44,9 +49,9 @@ export const AppShell = () => {
         <Outlet />
       </main>
       {!sessionMode ? (
-        <nav className="mobile-nav" aria-label="Primary navigation">
+        <nav className="mobile-nav" aria-label="Primary navigation" style={{ '--active-index': activeIndex } as CSSProperties}>
           {links.map((link) => (
-            <NavLink key={link.to} to={link.to} end={link.to === '/'}>
+            <NavLink key={link.to} to={link.to} end={link.to === '/'} className={({ isActive }) => linkClassName(link.to, isActive)}>
               <Icon name={link.icon} />
               <span>{link.label}</span>
             </NavLink>

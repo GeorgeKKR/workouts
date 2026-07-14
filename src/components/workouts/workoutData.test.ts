@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getWorkouts } from './workoutData';
+import { getWorkout, getWorkouts } from './workoutData';
 
 describe('full-body program schedule', () => {
   it('uses the prescribed full-body strength, core, cardio, and recovery rhythm', () => {
@@ -25,5 +25,11 @@ describe('full-body program schedule', () => {
   it('adds a form-first progression reminder after the first two weeks', () => {
     expect(getWorkouts('monday', 3).find((workout) => workout.name === 'Chest Press')?.guidance)
       .toContain('top of the range');
+  });
+
+  it('resolves repeated exercise ids within their day and week', () => {
+    expect(getWorkout('monday', 1, 'warmup-cardio-1')?.name).toBe('Warm-up Cardio');
+    expect(getWorkout('wednesday', 1, 'warmup-cardio-1')?.name).toBe('Warm-up Cardio');
+    expect(getWorkout('tuesday', 1, 'warmup-cardio-1')).toBeUndefined();
   });
 });
